@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ChevronDown, Calendar, RefreshCw, AlertCircle } from 'lucide-react';
 import { initialDetections, policyOptions } from './detectionUtils';
 import Sidebar from '../components/Sidebar';
+import AttackGraph from '../components/AttackGraph/AttackGraph';
 
 type Detection = {
   id: number;
@@ -166,6 +167,7 @@ const SecurityDetections: React.FC = () => {
 
                     {/* Content */}
                     <div className="flex-1 overflow-auto p-4 m-[16px] bg-white rounded-[16px]">
+                              <AttackGraph />
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
