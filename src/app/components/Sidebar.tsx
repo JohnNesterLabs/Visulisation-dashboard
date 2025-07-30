@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
+import Image from 'next/image';
 import {
     Search,
     Shield,
@@ -29,14 +30,21 @@ const sidebarItems = [
     { name: 'Integrations', icon: GitBranch, active: false, hasSubmenu: true }
 ];
 
-const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection }) => {
+interface SidebarProps {
+    sidebarOpen: boolean;
+    setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    activeSection: string;
+    setActiveSection: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection }) => {
     return (
         <div className={`transition-all duration-300 relative ${sidebarOpen ? 'w-64' : 'w-16'} bg-white border-r border-gray-200 flex flex-col`}>
             {/* Logo */}
             <div className="p-4 border-b border-gray-200 flex items-center">
                 <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                        <img src="/logo sqrx.png" alt="logo" />
+                        <Image src="/logo sqrx.png" alt="logo" width={32} height={32} />
                     </div>
                     {sidebarOpen && (
                         <span className="text-[19px] font-semibold text-gray-900">SquareX</span>
@@ -108,7 +116,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection 
                     <div className="p-4 border-t border-gray-200">
                         <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full flex items-center justify-center">
-                                <img src="/admin.png" alt="admin" />
+                                <Image src="/admin.png" alt="admin" width={32} height={32} />
                             </div>
                             <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-900">Alex Morgan</div>
@@ -133,7 +141,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection 
                 <div className="flex flex-col items-center gap-4 mt-auto mb-4">
                     {/* Profile icon */}
                     <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 border-2 border-white shadow">
-                        <img src="/admin.png" alt="admin" className="w-8 h-8 rounded-full" />
+                        <Image src="/admin.png" alt="admin" width={32} height={32} className="w-8 h-8 rounded-full" />
                     </button>
                     {/* Settings icon */}
                     <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Sidebar from '../Sidebar';
 import {
     Search,
@@ -33,10 +34,28 @@ const Dashboard = () => {
         informational: 5
     });
 
-    const [hoveredBar, setHoveredBar] = useState(null);
-    const [tooltipData, setTooltipData] = useState(null);
+    type SeverityData = {
+        total: number;
+        critical: number;
+        high: number;
+        informational: number;
+    };
 
-    const DonutChart = ({ data }) => {
+    type TooltipData = {
+        name: string;
+        value: number;
+        x: number;
+        y: number;
+    } | null;
+
+    const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+    const [tooltipData, setTooltipData] = useState<TooltipData>(null);
+
+    interface DonutChartProps {
+        data: SeverityData;
+    }
+
+    const DonutChart: React.FC<DonutChartProps> = ({ data }) => {
         const { total, critical, high, informational } = data;
         const criticalAngle = (critical / 100) * 360;
         const highAngle = (high / 100) * 360;
@@ -399,7 +418,7 @@ const Dashboard = () => {
                                             <tr key={index} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-3">
-                                                        <img src={website.image} alt="" className='w-[32px] h-[32px]' />
+                                                        <Image src={website.image} alt="" width={32} height={32} className='w-[32px] h-[32px]' />
                                                         {/* <span className="text-lg">{website.icon}</span> */}
                                                         <span className="text-sm text-gray-900">{website.domain}</span>
                                                     </div>
@@ -442,7 +461,7 @@ const Dashboard = () => {
                                             <tr key={index} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-3">
-                                                        <img src={domain.image} alt="" className='w-[32px] h-[32px]' />
+                                                        <Image src={domain.image} alt="" width={32} height={32} className='w-[32px] h-[32px]' />
                                                         {/* <span className="text-lg">{domain.icon}</span> */}
                                                         <span className="text-sm text-gray-900">{domain.domain}</span>
                                                     </div>

@@ -1,50 +1,70 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Calendar, MoreHorizontal, RefreshCw, Download, Share, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronDown, Calendar, RefreshCw, AlertCircle } from 'lucide-react';
 import { initialDetections, policyOptions } from './detectionUtils';
 import Sidebar from '../components/Sidebar';
 
-const SecurityDetections = () => {
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-    const [filters, setFilters] = useState({
-        severity: '',
-        effect: '',
-        policyType: '',
-        user: '',
-        policy: '',
-        realTime: true
-    });
-    const [selectedRows, setSelectedRows] = useState(new Set());
-    const [showMore, setShowMore] = useState(false);
-    const [activeSection, setActiveSection] = useState('Analytics');
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    // Dropdown state
-    const [openDropdown, setOpenDropdown] = useState('');
+type Detection = {
+  id: number;
+  severity: string;
+  event: string;
+  user: string;
+  timestamp: string;
+  policy: string;
+  effect: string;
+};
 
-    const [detections, setDetections] = useState(initialDetections);
+type Filters = {
+  severity: string;
+  effect: string;
+  policyType: string;
+  user: string;
+  policy: string;
+  realTime: boolean;
+};
 
-    const getSeverityColor = (severity) => {
-        switch (severity.toLowerCase()) {
-            case 'critical':
-                return 'bg-[#E85139]';
-            case 'high':
-                return 'bg-[#FB8C00]';
-            case 'medium':
-                return 'bg-[#FBC02D]';
-            case 'informational':
-                return 'bg-[#4A98E7]';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
+const SecurityDetections: React.FC = () => {
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'severity', direction: 'asc' });
+  const [filters, setFilters] = useState<Filters>({
+    severity: '',
+    effect: '',
+    policyType: '',
+    user: '',
+    policy: '',
+    realTime: true,
+  });
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [showMore, setShowMore] = useState(false);
+  const [activeSection, setActiveSection] = useState('Analytics');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Dropdown state
+  const [openDropdown, setOpenDropdown] = useState('');
 
-    const getEffectIcon = (effect) => {
+  const [detections] = useState<Detection[]>(initialDetections);
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return 'bg-[#E85139]';
+      case 'high':
+        return 'bg-[#FB8C00]';
+      case 'medium':
+        return 'bg-[#FBC02D]';
+      case 'informational':
+        return 'bg-[#4A98E7]';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+    const getEffectIcon = (effect: string) => {
         switch (effect.toLowerCase()) {
             case 'allow':
-                return <img src="/Circle-Check.png" className='w-[20px] h-[20px]' alt="check" />;
+                return <Image src="/Circle-Check.png" className='w-[20px] h-[20px]' alt="check" width={20} height={20} />;
             case 'block':
-                return <img src="/stop-sign.png" className='w-[20px] h-[20px]' alt="check" />;
+                return <Image src="/stop-sign.png" className='w-[20px] h-[20px]' alt="check" width={20} height={20} />;
             case 'warn':
                 return <AlertCircle className="w-[20px] h-[20px] text-yellow-600" />;
             default:
@@ -52,62 +72,66 @@ const SecurityDetections = () => {
         }
     };
 
-    const handleSort = (key) => {
-        let direction = 'asc';
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         }
         setSortConfig({ key, direction });
     };
 
-    const sortedDetections = useMemo(() => {
-        const sortableDetections = [...detections];
-        if (sortConfig.key) {
-            sortableDetections.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
-                return 0;
-            });
+  const sortedDetections = useMemo(() => {
+    const sortableDetections = [...detections];
+    const key = sortConfig.key as keyof Detection;
+    if (key) {
+      sortableDetections.sort((a, b) => {
+        if (a[key] < b[key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        return sortableDetections;
-    }, [detections, sortConfig]);
-
-    const filteredDetections = useMemo(() => {
-        return sortedDetections.filter(detection => {
-            return Object.keys(filters).every(key => {
-                if (!filters[key]) return true;
-                return detection[key]?.toLowerCase().includes(filters[key].toLowerCase());
-            });
-        });
-    }, [sortedDetections, filters]);
-
-    const displayedDetections = showMore ? filteredDetections : filteredDetections.slice(0, 7);
-
-    const handleRowSelect = (id) => {
-        const newSelected = new Set(selectedRows);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
+        if (a[key] > b[key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
         }
-        setSelectedRows(newSelected);
-    };
+        return 0;
+      });
+    }
+    return sortableDetections;
+  }, [detections, sortConfig]);
 
-    const handleFilterChange = (filterType, value) => {
+  const filteredDetections = useMemo(() => {
+    return sortedDetections.filter((detection) => {
+      return (Object.keys(filters) as (keyof Filters)[]).every((key) => {
+        if (!filters[key] || key === 'realTime') return true;
+        return (
+          typeof detection[key as keyof Detection] === 'string' &&
+          (detection[key as keyof Detection] as string).toLowerCase().includes((filters[key] as string).toLowerCase())
+        );
+      });
+    });
+  }, [sortedDetections, filters]);
+
+  const displayedDetections = showMore ? filteredDetections : filteredDetections.slice(0, 7);
+
+  const handleRowSelect = (id: number) => {
+    const newSelected = new Set(selectedRows);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedRows(newSelected);
+  };
+
+    const handleFilterChange = (filterType: string, value: string) => {
         setFilters(prev => ({ ...prev, [filterType]: value }));
     };
 
-    const getSortIcon = (columnKey) => {
+    const getSortIcon = (columnKey: string) => {
         if (sortConfig.key !== columnKey) {
-            return <img src="/down.png" alt="down" className='w-[16px] h-[16px]' />;
+            return <Image src="/down.png" alt="down" className='w-[16px] h-[16px]' width={16} height={16} />;
         }
-        return sortConfig.direction === 'asc' ?
-            <img src="/up.png" alt="up" className='w-[16px] h-[16px]' /> :
-            <img src="/down.png" alt="down" className='w-[16px] h-[16px]' />;
+        return sortConfig.direction === 'asc'
+            ? <Image src="/up.png" alt="up" className='w-[16px] h-[16px]' width={16} height={16} />
+            : <Image src="/down.png" alt="down" className='w-[16px] h-[16px]' width={16} height={16} />;
     };
 
     // (Removed duplicate openDropdown and policyOptions declaration)
@@ -176,7 +200,7 @@ const SecurityDetections = () => {
                                     <span className="text-sm text-black">May 29 - 06 June</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-[#F8F6FF] px-3 py-2 rounded-[16px]">
-                                    <img src="/columns.png" alt="column" className='w-[20px] h-[20px]' />
+                                    <Image src="/columns.png" alt="column" width={20} height={20} className='w-[20px] h-[20px]' />
                                     <span className="text-sm text-black">Column</span>
                                 </div>
                             </div>
@@ -423,7 +447,7 @@ const SecurityDetections = () => {
                                                 <td className="py-4 px-4 w-[120px]">
                                                     <div className="flex items-center gap-2 w-[120px]">
                                                         <span className="text-sm text-gray-900">{detection.user}</span>
-                                                        <span className="text-purple-600"><img src="/link.png" alt="link" className='w-[16px] h-[16px]' /></span>
+                                                        <span className="text-purple-600"><Image src="/link.png" alt="link" width={16} height={16} className='w-[16px] h-[16px]' /></span>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-gray-600 whitespace-pre-line w-[120px]">
@@ -446,14 +470,14 @@ const SecurityDetections = () => {
                                                             className="w-[20px]"
                                                             onClick={() => handleRowSelect(detection.id)}
                                                         >
-                                                            <img src="/menu.png" alt="menu" className="w-[20px] h-[20px] text-gray-500" />
+                                                            <Image src="/menu.png" alt="menu" width={20} height={20} className="w-[20px] h-[20px] text-gray-500" />
                                                             {/* <MoreHorizontal className="w-4 h-4 text-gray-500" /> */}
                                                         </button>
                                                         <button className="w-[20px]">
-                                                            <img src="/download.png" alt="download" className="w-[20px] h-[20px] text-gray-500" />
+                                                            <Image src="/download.png" alt="download" width={20} height={20} className="w-[20px] h-[20px] text-gray-500" />
                                                         </button>
                                                         <button className="w-[20px]">
-                                                            <img src="/share.png" alt="share" className="w-[20px] h-[20px] text-gray-500" />
+                                                            <Image src="/share.png" alt="share" width={20} height={20} className="w-[20px] h-[20px] text-gray-500" />
                                                         </button>
                                                     </div>
                                                 </td>
