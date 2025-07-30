@@ -61,7 +61,7 @@ const SecurityDetections = () => {
     };
 
     const sortedDetections = useMemo(() => {
-        let sortableDetections = [...detections];
+        const sortableDetections = [...detections];
         if (sortConfig.key) {
             sortableDetections.sort((a, b) => {
                 if (a[sortConfig.key] < b[sortConfig.key]) {
