@@ -18,6 +18,7 @@ import {
   Search,
   FileText
 } from 'lucide-react';
+import SkillChart from '../SkillChart/SkillChart';
 
 // TypeScript types for node and connection
 interface AttackNode {
@@ -319,87 +320,7 @@ const toggleSection = (section: keyof typeof expandedSections) => {
       {/* Main Content */}
       <div className="flex h-[500px]">
         {/* Graph Area */}
-        <div className="flex-1 relative bg-white">
-          {/* Controls */}
-          <div className="absolute top-4 right-4 z-20 flex flex-col space-y-2">
-            <button 
-              onClick={handleZoomIn}
-              className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={handleZoomOut}
-              className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={handleReset}
-              className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-              <Lock className="w-4 h-4" />
-            </button>
-            <button className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Graph Container */}
-          <div 
-            ref={graphRef}
-            className="w-full h-full overflow-hidden cursor-grab attack-graph-container"
-            onMouseDown={handleMouseDown}
-            style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
-          >
-            <div
-              className="relative w-full h-full"
-              style={{
-                transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
-                transformOrigin: 'center center'
-              }}
-            >
-              <svg 
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ overflow: 'visible' }}
-              >
-                <defs>
-                  <marker
-                    id="arrowhead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#8B5CF6" />
-                  </marker>
-                </defs>
-                {connections.map((connection, index) => (
-                  <ConnectionLine key={index} connection={connection} />
-                ))}
-              </svg>
-
-              {nodes.map((node) => (
-                <NodeComponent
-                  key={node.id}
-                  node={node}
-                  isSelected={selectedNode?.id === node.id}
-                  onClick={setSelectedNode}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Status Badge */}
-          <div className="absolute bottom-6 right-6 bg-green-100 text-green-800 px-3 py-2 rounded-full text-sm font-medium border border-green-200">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            Allowed at 9th July 2025 03:58:31 PM
-          </div>
-        </div>
+           <SkillChart/>
 
         {/* Details Panel */}
         {showDetails && selectedNode && (
