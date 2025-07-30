@@ -70,16 +70,16 @@ const Dashboard = () => {
                             cy="50"
                             r="40"
                             fill="none"
-                            stroke="#e5e7eb"
-                            strokeWidth="8"
+                            stroke="#F3E8FF"
+                            strokeWidth="18"
                         />
                         <circle
                             cx="50"
                             cy="50"
                             r="40"
                             fill="none"
-                            stroke="#7c3aed"
-                            strokeWidth="8"
+                            stroke="#8253A2"
+                            strokeWidth="18"
                             strokeDasharray={`${criticalAngle * 0.7} ${360 - criticalAngle * 0.7}`}
                             strokeDashoffset="0"
                         />
@@ -88,8 +88,8 @@ const Dashboard = () => {
                             cy="50"
                             r="40"
                             fill="none"
-                            stroke="#c4b5fd"
-                            strokeWidth="8"
+                            stroke="#D8B4FE"
+                            strokeWidth="18"
                             strokeDasharray={`${highAngle * 0.7} ${360 - highAngle * 0.7}`}
                             strokeDashoffset={`-${criticalAngle * 0.7}`}
                         />
@@ -102,15 +102,15 @@ const Dashboard = () => {
                 </div>
                 <div className="flex gap-4 text-xs">
                     <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                        <div className="w-2 h-2 bg-[#8253A2] rounded-full"></div>
                         <span className="text-gray-600">Critical</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-purple-300 rounded-full"></div>
+                        <div className="w-2 h-2 bg-[#D8B4FE] rounded-full"></div>
                         <span className="text-gray-600">High</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                        <div className="w-2 h-2 bg-[#F3E8FF] rounded-full"></div>
                         <span className="text-gray-600">Informational</span>
                     </div>
                 </div>
@@ -390,16 +390,16 @@ const Dashboard = () => {
                     {/* Tables Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Risky Websites */}
-                        <div className="bg-white rounded-[16px] border border-gray-200">
-                            <div className="px-6 py-4 border-b border-gray-200">
+                        <div className="bg-white rounded-[16px]">
+                            <div className="px-6 py-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-2">
                                         <h3 className="text-[20px] font-semibold text-gray-900">Risky Websites</h3>
                                         <span className="bg-[#D8B4FE] text-black text-xs px-2 py-1 rounded-full">34 Total</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <ExternalLink className="w-4 h-4 text-[#642CFD]" />
-                                        <Download className="w-4 h-4 text-[#642CFD]" />
+                                        <img src="/sharing.png" alt="" className='w-4 h-4' />
+                                        <img src="/downloading.png" alt="" className='w-4 h-4' />
                                     </div>
                                 </div>
                             </div>
@@ -442,8 +442,8 @@ const Dashboard = () => {
                                         <span className="bg-[#D8B4FE] text-black text-xs px-2 py-1 rounded-full">34 Total</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <ExternalLink className="w-4 h-4 text-[#642CFD]" />
-                                        <Download className="w-4 h-4 text-[#642CFD]" />
+                                        <img src="/sharing.png" alt="" className='w-4 h-4' />
+                                        <img src="/downloading.png" alt="" className='w-4 h-4' />
                                     </div>
                                 </div>
                             </div>

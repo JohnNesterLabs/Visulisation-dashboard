@@ -16,6 +16,7 @@ import {
     ChevronDown,
     LogOut
 } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
 
 const sidebarItems = [
     { name: 'Detections', icon: Shield, active: false },
@@ -38,6 +39,9 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection }) => {
+    const router = useRouter();
+    const pathname = usePathname();
+
     return (
         <div className={`transition-all duration-300 relative ${sidebarOpen ? 'w-64' : 'w-16'} bg-white border-r border-gray-200 flex flex-col`}>
             {/* Logo */}
@@ -90,24 +94,36 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeSe
 
             {/* Navigation */}
             <nav className="flex-1 px-2 space-y-1">
-                {sidebarItems.map((item, index) => (
-                    <div key={index}>
-                        <button
-                            className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-3' : 'justify-center px-0'} py-2 text-sm font-medium rounded-lg transition-colors ${item.active
-                                ? 'bg-purple-50 text-purple-600'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
-                            onClick={() => setActiveSection(item.name)}
-                            title={sidebarOpen ? undefined : item.name}
-                        >
-                            <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'justify-center w-full'}`}>
-                                <item.icon className="w-5 h-5" />
-                                {sidebarOpen && <span>{item.name}</span>}
-                            </div>
-                            {sidebarOpen && item.hasSubmenu && <ChevronDown className="w-4 h-4" />}
-                        </button>
-                    </div>
-                ))}
+                {sidebarItems.map((item, index) => {
+                    // Determine if this item should be active based on the current path
+                    const isActive = (item.name === 'Detections' && pathname.startsWith('/detection')) ||
+                                     (item.name === 'Analytics' && pathname === '/');
+                    return (
+                        <div key={index}>
+                            <button
+                                className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-3' : 'justify-center px-0'} py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+                                    ? 'bg-purple-50 text-purple-600'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    }`}
+                                onClick={() => {
+                                    setActiveSection(item.name);
+                                    if (item.name === 'Detections') {
+                                        router.push('/detection');
+                                    } else if (item.name === 'Analytics') {
+                                        router.push('/');
+                                    }
+                                }}
+                                title={sidebarOpen ? undefined : item.name}
+                            >
+                                <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'justify-center w-full'}`}>
+                                    <item.icon className="w-5 h-5" />
+                                    {sidebarOpen && <span>{item.name}</span>}
+                                </div>
+                                {sidebarOpen && item.hasSubmenu && <ChevronDown className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    );
+                })}
             </nav>
 
             {/* User Profile, Settings, and Log out */}

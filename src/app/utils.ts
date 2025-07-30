@@ -14,12 +14,12 @@
 
     // Sample data for charts
   export const categoryData = [
-        { name: "Business", shortName: "Busine...", value: 100, color: "#8b5cf6" },
-        { name: "IT", shortName: "IT", value: 22, color: "#6d28d9" },
-        { name: "Finance", shortName: "Finance", value: 65, color: "#c4b5fd" },
-        { name: "Shopping", shortName: "Sho...", value: 35, color: "#ddd6fe" },
-        { name: "Government", shortName: "Govern...", value: 22, color: "#8b5cf6" },
-        { name: "Search", shortName: "Search...", value: 15, color: "#e9d5ff" },
+        { name: "Business", shortName: "Busine...", value: 100, color: "#8959A9" },
+        { name: "IT", shortName: "IT", value: 22, color: "#896D9C" },
+        { name: "Finance", shortName: "Finance", value: 65, color: "#D8B4FE" },
+        { name: "Shopping", shortName: "Sho...", value: 35, color: "#DDC8F2" },
+        { name: "Government", shortName: "Govern...", value: 22, color: "#B19EBD" },
+        { name: "Search", shortName: "Search...", value: 15, color: "#E2DBE6" },
     ];
 
   export const riskyWebsites = [
