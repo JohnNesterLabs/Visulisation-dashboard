@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Sidebar from '../Sidebar';
 import {
@@ -24,14 +24,42 @@ import {
 } from 'lucide-react';
 import { categoryData, chartAreaHeight, chartConfig, chartHeight, mostVisitedDomains, riskyCategories, riskyWebsites } from '@/app/utils';
 
+
+
 const Dashboard = () => {
+    // Animation trigger state for chart/progress refresh
+    const [animateKey, setAnimateKey] = React.useState(0);
     const [activeSection, setActiveSection] = useState('Analytics');
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [severityData, setSeverityData] = useState({
+    // Final data for charts and progress bars
+    const finalSeverityData = {
         total: 9200,
         critical: 75,
         high: 20,
         informational: 5
+    };
+    const finalValues = {
+        freeHosted1: { percent: 40, count: 18 },
+        typosquatting: { percent: 8, count: 5 },
+        newDomain: { percent: 60, count: 30 },
+        freeHosted2: { percent: 20, count: 9 }
+    };
+    // Animated values for progress bars, donut, bar chart, and numbers
+    const [animated, setAnimated] = useState({
+        progress: {
+            freeHosted1: { percent: 1, count: 1 },
+            typosquatting: { percent: 1, count: 1 },
+            newDomain: { percent: 1, count: 1 },
+            freeHosted2: { percent: 1, count: 1 }
+        },
+        donut: { ...finalSeverityData },
+        bar: categoryData.map(d => ({ ...d, value: 0 })),
+        numbers: {
+            detections: 0,
+            uniqueDomains: 0,
+            maliciousSites: 0,
+            usersAtRisk: 0
+        }
     });
 
     type SeverityData = {
@@ -40,27 +68,121 @@ const Dashboard = () => {
         high: number;
         informational: number;
     };
-
     type TooltipData = {
         name: string;
         value: number;
         x: number;
         y: number;
     } | null;
-
     const [hoveredBar, setHoveredBar] = useState<number | null>(null);
     const [tooltipData, setTooltipData] = useState<TooltipData>(null);
-
     interface DonutChartProps {
         data: SeverityData;
     }
 
-    const DonutChart: React.FC<DonutChartProps> = ({ data }) => {
+    // Synchronized animation for all dashboard elements
+    useEffect(() => {
+        const duration = 1500;
+        const steps = 50;
+        const stepDelay = duration / steps;
+        let currentStep = 0;
+        const startAnimated = {
+            progress: {
+                freeHosted1: { percent: 1, count: 1 },
+                typosquatting: { percent: 1, count: 1 },
+                newDomain: { percent: 1, count: 1 },
+                freeHosted2: { percent: 1, count: 1 }
+            },
+            donut: { total: 0, critical: 0, high: 0, informational: 0 },
+            bar: categoryData.map(d => ({ ...d, value: 0 })),
+            numbers: {
+                detections: 0,
+                uniqueDomains: 0,
+                maliciousSites: 0,
+                usersAtRisk: 0
+            }
+        };
+        const endAnimated = {
+            progress: finalValues,
+            donut: finalSeverityData,
+            bar: categoryData,
+            numbers: {
+                detections: 4600,
+                uniqueDomains: 15,
+                maliciousSites: 25,
+                usersAtRisk: 1000
+            }
+        };
+        setAnimated(startAnimated);
+        const interval = setInterval(() => {
+            currentStep++;
+            const progress = Math.min(currentStep / steps, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            setAnimated({
+                progress: {
+                    freeHosted1: {
+                        percent: Math.round(1 + (finalValues.freeHosted1.percent - 1) * easeOut),
+                        count: Math.round(1 + (finalValues.freeHosted1.count - 1) * easeOut)
+                    },
+                    typosquatting: {
+                        percent: Math.round(1 + (finalValues.typosquatting.percent - 1) * easeOut),
+                        count: Math.round(1 + (finalValues.typosquatting.count - 1) * easeOut)
+                    },
+                    newDomain: {
+                        percent: Math.round(1 + (finalValues.newDomain.percent - 1) * easeOut),
+                        count: Math.round(1 + (finalValues.newDomain.count - 1) * easeOut)
+                    },
+                    freeHosted2: {
+                        percent: Math.round(1 + (finalValues.freeHosted2.percent - 1) * easeOut),
+                        count: Math.round(1 + (finalValues.freeHosted2.count - 1) * easeOut)
+                    }
+                },
+                donut: {
+                    total: Math.round(finalSeverityData.total * easeOut),
+                    critical: Math.round(finalSeverityData.critical * easeOut),
+                    high: Math.round(finalSeverityData.high * easeOut),
+                    informational: Math.round(finalSeverityData.informational * easeOut)
+                },
+                bar: categoryData.map((d, i) => ({ ...d, value: Math.round(d.value * easeOut) })),
+                numbers: {
+                    detections: Math.round(4600 * easeOut),
+                    uniqueDomains: Math.round(15 * easeOut),
+                    maliciousSites: Math.round(25 * easeOut),
+                    usersAtRisk: Math.round(1000 * easeOut)
+                }
+            });
+            if (progress >= 1) clearInterval(interval);
+        }, stepDelay);
+        return () => clearInterval(interval);
+    }, [animateKey]);
+    // AnimatedNumber now just formats the value passed from parent
+    const AnimatedNumber: React.FC<{ value: number; precision?: number }> = ({ value, precision = 0 }) => {
+        const formatWithCurrency = (num: number) => {
+            const absNum = Math.abs(num);
+            const formatted = absNum.toLocaleString('en-US', { minimumFractionDigits: precision, maximumFractionDigits: precision });
+            if (num < 0) {
+                return `-${formatted}`;
+            }
+            return `${formatted}`;
+        };
+        const fullValue = formatWithCurrency(Number(value));
+        return (
+            <span
+                className="block truncate"
+                style={{ maxWidth: '100%', wordBreak: 'break-all', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                title={fullValue}
+            >
+                {formatWithCurrency(value)}
+            </span>
+        );
+    };
+
+    // AnimatedDonutChart is now a pure presentational component
+    const AnimatedDonutChart: React.FC<DonutChartProps> = ({ data }) => {
         const { total, critical, high, informational } = data;
         const criticalAngle = (critical / 100) * 360;
         const highAngle = (high / 100) * 360;
         const informationalAngle = (informational / 100) * 360;
-
         return (
             <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 mb-4">
@@ -96,8 +218,9 @@ const Dashboard = () => {
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-2xl font-bold text-gray-900">
-                            {(total / 1000).toFixed(1)}K
+                            <AnimatedNumber value={total / 1000} precision={1} />
                         </span>
+                        <span className="text-2xl text-gray-900 font-bold">K</span>
                     </div>
                 </div>
                 <div className="flex gap-4 text-xs">
@@ -117,6 +240,78 @@ const Dashboard = () => {
             </div>
         );
     };
+
+    // AnimatedBarChart is now a pure presentational component
+    const AnimatedBarChart: React.FC<{ data: typeof categoryData }> = ({ data }) => {
+        return (
+            <>{data.map((category, index) => {
+                const barHeightPercentage = (category.value / chartConfig.maxValue) * 100;
+                return (
+                    <div key={index} className="flex items-end h-full">
+                        <div
+                            className="transition-all duration-300 cursor-pointer relative"
+                            style={{
+                                width: `${chartConfig.barWidth}px`,
+                                height: `${barHeightPercentage}%`,
+                                backgroundColor: category.color,
+                                minHeight: category.value > 0 ? '1px' : '0px'
+                            }}
+                            onMouseEnter={(e) => {
+                                setTooltipData({
+                                    name: category.name,
+                                    value: category.value,
+                                    x: e.currentTarget.getBoundingClientRect().left,
+                                    y: e.currentTarget.getBoundingClientRect().top
+                                });
+                            }}
+                            onMouseLeave={() => {
+                                setHoveredBar(null);
+                                setTooltipData(null);
+                            }}
+                        >
+                            {hoveredBar === index && (
+                                <div className="absolute inset-0 bg-white bg-opacity-30 pointer-events-none"></div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}</>
+        );
+    };
+
+interface ProgressBarProps {
+    label: string;
+    animatedValue: { percent: number; count: number };
+}
+const ProgressBar: React.FC<ProgressBarProps> = ({ label, animatedValue }) => (
+    <div className="mb-3">
+        <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+                <div className="rounded-md h-[30px] overflow-hidden relative">
+                    <div
+                        className="bg-[#E9D8FD] h-full rounded-md transition-all duration-100 ease-out"
+                        style={{ width: `${Math.min(animatedValue.percent, 100)}%` }}
+                    >
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-between px-[8px] py-[4px]">
+                        <span className="text-gray-800 font-medium text-sm">
+                            {label}
+                        </span>
+                        <span className="text-gray-800 text-sm">
+                            {animatedValue.percent}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div className="text-[#642CFD] font-bold text-[14px] w-12 text-center">
+                {animatedValue.count}
+            </div>
+        </div>
+    </div>
+);
+
+    // Animation trigger state
+    // (removed stray comment)
 
     return (
         <div className="flex h-screen bg-gray-50">
@@ -140,12 +335,18 @@ const Dashboard = () => {
                         </div>
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                             <span>Last updated 05:08</span>
-                            <RefreshCw className="w-4 h-4" />
+                            <button
+                                className="ml-2 p-1 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+                                onClick={() => setAnimateKey(k => k + 1)}
+                                title="Refresh Data"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </header>
 
-                {/* Content */}
+                {/* Content */} 
                 <main className="flex-1 overflow-auto p-4">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -160,7 +361,7 @@ const Dashboard = () => {
                         >
                             <div>
                                 <div className="flex items-center justify-start">
-                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]">4600</h3>
+                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]"><AnimatedNumber value={animated.numbers.detections} /></h3>
                                     <TrendingUp className="w-5 h-5 text-red-500" />
                                 </div>
                                 <p className="text-[20px] font-semibold text-gray-900 mb-2">Detections</p>
@@ -178,7 +379,7 @@ const Dashboard = () => {
                         <div className="bg-white rounded-[16px] p-6 border border-gray-200 flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-start">
-                                    <h3 className="text-5xl font-medium  text-gray-900 mr-[8px]">15</h3>
+                                    <h3 className="text-5xl font-medium  text-gray-900 mr-[8px]"><AnimatedNumber value={animated.numbers.uniqueDomains} /></h3>
                                     <TrendingDown className="w-5 h-5 text-purple-500" />
                                 </div>
                                 <p className="text-[20px] font-semibold text-gray-900 mb-2">Unique Domains Visited</p>
@@ -196,7 +397,7 @@ const Dashboard = () => {
                         <div className="bg-white rounded-[16px] p-6 border border-gray-200 flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-start">
-                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]">25</h3>
+                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]"><AnimatedNumber value={animated.numbers.maliciousSites} /></h3>
                                     <TrendingDown className="w-5 h-5 text-purple-500" />
                                 </div>
                                 <p className="text-[20px] font-semibold text-gray-900 mb-2">Known Malicious Site Visits</p>
@@ -214,7 +415,7 @@ const Dashboard = () => {
                         <div className="bg-white rounded-[16px] p-6 border border-gray-200 flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-start">
-                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]">1000</h3>
+                                    <h3 className="text-5xl font-medium text-gray-900 mr-[8px]"><AnimatedNumber value={animated.numbers.usersAtRisk} /></h3>
                                     <TrendingUp className="w-5 h-5 text-red-500" />
                                 </div>
                                 <p className="text-[20px] font-semibold text-gray-900 mb-2">Users at Risk</p>
@@ -234,15 +435,13 @@ const Dashboard = () => {
                         {/* Detections by Severity */}
                         <div className="bg-white w-[24%]  rounded-[16px] p-6 border border-gray-200">
                             <h3 className="text-[20px] font-semibold text-gray-900 mb-6">Detections by Severity</h3>
-                            <DonutChart data={severityData} />
+                            <AnimatedDonutChart data={animated.donut} />
                         </div>
 
 
                         {/* Right column - Top Site Categories (full height) */}
                         <div className="bg-white rounded-[16px] w-[50%] p-6 border border-gray-200 h-fit relative">
                             <h3 className="text-lg font-semibold text-gray-900 mb-6">Top Site Categories</h3>
-
-                            {/* Chart Container - Dynamic Height */}
                             <div
                                 className="relative"
                                 style={{
@@ -266,14 +465,14 @@ const Dashboard = () => {
                                     <span className="leading-none">10k</span>
                                     <span className="leading-none">0</span>
                                 </div>
-
                                 {/* Grid lines aligned with Y-axis labels */}
                                 <div
                                     className="absolute top-0 flex flex-col justify-between"
                                     style={{
                                         left: `${chartConfig.paddingLeft}px`,
                                         right: `${chartConfig.paddingRight}px`,
-                                        bottom: `${chartConfig.paddingBottom}px`
+                                        bottom: `${chartConfig.paddingBottom}px`,
+                                        height: `${chartAreaHeight}px`
                                     }}
                                 >
                                     <div className="border-t border-gray-200 w-full"></div>
@@ -282,7 +481,6 @@ const Dashboard = () => {
                                     <div className="border-t border-gray-200 w-full"></div>
                                     <div className="border-t border-gray-300 w-full"></div> {/* Bottom line (0) slightly darker */}
                                 </div>
-
                                 {/* Chart area - bars start from the very bottom */}
                                 <div
                                     className="absolute top-0 flex items-end justify-between"
@@ -293,40 +491,7 @@ const Dashboard = () => {
                                         height: `${chartAreaHeight}px`
                                     }}
                                 >
-                                    {categoryData.map((category, index) => {
-                                        const barHeightPercentage = (category.value / chartConfig.maxValue) * 100;
-                                        return (
-                                            <div key={index} className="flex items-end h-full">
-                                                <div
-                                                    className="transition-all duration-300 cursor-pointer relative"
-                                                    style={{
-                                                        width: `${chartConfig.barWidth}px`,
-                                                        height: `${barHeightPercentage}%`,
-                                                        backgroundColor: category.color,
-                                                        minHeight: category.value > 0 ? '1px' : '0px'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        // setHoveredBar(index);
-                                                        setTooltipData({
-                                                            name: category.name,
-                                                            value: category.value,
-                                                            x: e.currentTarget.getBoundingClientRect().left,
-                                                            y: e.currentTarget.getBoundingClientRect().top
-                                                        });
-                                                    }}
-                                                    onMouseLeave={() => {
-                                                        setHoveredBar(null);
-                                                        setTooltipData(null);
-                                                    }}
-                                                >
-                                                    {/* Hover effect - Light overlay instead of opacity change */}
-                                                    {hoveredBar === index && (
-                                                        <div className="absolute inset-0 bg-white bg-opacity-30 pointer-events-none"></div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                    <AnimatedBarChart data={animated.bar} />
                                 </div>
 
                                 {/* X-axis labels positioned at the bottom */}
@@ -367,21 +532,30 @@ const Dashboard = () => {
                         </div>
 
                         {/* Risky Websites of all Sites */}
-                        <div className="bg-white w-[24%]  rounded-[16px] p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">Risky Websites of all Sites</h3>
-                            <div className="space-y-4">
-                                {riskyCategories.map((category, index) => (
-                                    <div key={index} className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-3 h-3 rounded ${category.color}`}></div>
-                                            <span className="text-sm text-gray-900">{category.name}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <span className="text-sm font-medium text-gray-900">{category.percentage}%</span>
-                                            <span className="text-xs text-gray-500">{category.count}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="bg-white w-[24%] rounded-[16px] p-6 border border-gray-200">
+                            <div className="max-w-4xl mx-auto bg-white">
+                                <h1 className="text-[20px] font-bold text-gray-800 mb-4">
+                                    Risky Websites of all Sites
+                                </h1>
+
+                                <div className="space-y-1">
+                                    <ProgressBar
+                                        label="Free Hosted"
+                                        animatedValue={animated.progress.freeHosted1}
+                                    />
+                                    <ProgressBar
+                                        label="Typosquatting"
+                                        animatedValue={animated.progress.typosquatting}
+                                    />
+                                    <ProgressBar
+                                        label="New Domain"
+                                        animatedValue={animated.progress.newDomain}
+                                    />
+                                    <ProgressBar
+                                        label="Free Hosted"
+                                        animatedValue={animated.progress.freeHosted2}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -398,8 +572,8 @@ const Dashboard = () => {
                                         <span className="bg-[#D8B4FE] text-black text-xs px-2 py-1 rounded-full">34 Total</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <img src="/sharing.png" alt="" className='w-4 h-4' />
-                                        <img src="/downloading.png" alt="" className='w-4 h-4' />
+                                        <Image src="/sharing.png" alt="" width={16} height={16} className='w-4 h-4' />
+                                        <Image src="/downloading.png" alt="" width={16} height={16} className='w-4 h-4' />
                                     </div>
                                 </div>
                             </div>
@@ -442,8 +616,8 @@ const Dashboard = () => {
                                         <span className="bg-[#D8B4FE] text-black text-xs px-2 py-1 rounded-full">34 Total</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <img src="/sharing.png" alt="" className='w-4 h-4' />
-                                        <img src="/downloading.png" alt="" className='w-4 h-4' />
+                                        <Image src="/sharing.png" alt="" width={16} height={16} className='w-4 h-4' />
+                                        <Image src="/downloading.png" alt="" width={16} height={16} className='w-4 h-4' />
                                     </div>
                                 </div>
                             </div>
