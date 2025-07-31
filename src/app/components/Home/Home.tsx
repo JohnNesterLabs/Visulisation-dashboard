@@ -34,9 +34,9 @@ const Dashboard = () => {
     // Final data for charts and progress bars
     const finalSeverityData = {
         total: 9200,
-        critical: 75,
-        high: 20,
-        informational: 5
+        critical: 3200,
+        high: 4500,
+        informational: 1500
     };
     const finalValues = {
         freeHosted1: { percent: 40, count: 18 },
@@ -195,124 +195,232 @@ const Dashboard = () => {
             y: cy + (r * Math.sin(rad))
         };
     }
+    const sampleData = {
+        total: 9200,
+        critical: 3200,
+        high: 4500,
+        informational: 1500
+    };
+
     const AnimatedDonutChart: React.FC<DonutChartProps> = ({ data }) => {
         const { total, critical, high, informational } = data;
-        const [hovered, setHovered] = React.useState<null | {
+        const [hovered, setHovered] = React.useState<{
             label: string;
             value: number;
             color: string;
-            x: number;
-            y: number;
-        }>(null);
-        const svgRef = React.useRef<SVGSVGElement>(null);
-        // Angles for each segment (in degrees)
-        const criticalAngle = (critical / 100) * 360;
-        const highAngle = (high / 100) * 360;
-        const informationalAngle = (informational / 100) * 360;
-        // Start and end angles for each segment
+            percent: number;
+        } | null>(null);
+
+        const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+
+        // Calculate percentages
+        const criticalPercent = total > 0 ? (critical / total) * 100 : 0;
+        const highPercent = total > 0 ? (high / total) * 100 : 0;
+        const informationalPercent = total > 0 ? (informational / total) * 100 : 0;
+
+        // SVG circle properties
+        const radius = 40;
+        const strokeWidth = 18;
+        const circumference = 2 * Math.PI * radius;
+
+        // Calculate stroke lengths for each segment
+        const criticalLength = (criticalPercent / 100) * circumference;
+        const highLength = (highPercent / 100) * circumference;
+        const informationalLength = (informationalPercent / 100) * circumference;
+
+        // Calculate remaining space after each segment
+        const criticalGap = circumference - criticalLength;
+        const highGap = circumference - highLength;
+        const informationalGap = circumference - informationalLength;
+
+        // Calculate stroke offsets - start at top (25% of circumference)
+        const criticalOffset = circumference * 0.25; // Start at top
+        const highOffset = criticalOffset - criticalLength; // Start where critical ends
+        const informationalOffset = highOffset - highLength; // Start where high ends
+
+        // Define segments with proper angles for hover detection
         const segments = [
             {
                 label: 'Critical',
                 value: critical,
+                percent: criticalPercent,
                 color: '#8253A2',
-                start: 0,
-                end: criticalAngle
+                strokeDasharray: `${criticalLength} ${criticalGap}`,
+                strokeDashoffset: criticalOffset,
+                startAngle: 0,
+                endAngle: criticalPercent * 3.6 // Convert percentage to degrees
             },
             {
                 label: 'High',
                 value: high,
+                percent: highPercent,
                 color: '#D8B4FE',
-                start: criticalAngle,
-                end: criticalAngle + highAngle
+                strokeDasharray: `${highLength} ${highGap}`,
+                strokeDashoffset: highOffset,
+                startAngle: criticalPercent * 3.6,
+                endAngle: (criticalPercent + highPercent) * 3.6
             },
             {
                 label: 'Informational',
                 value: informational,
+                percent: informationalPercent,
                 color: '#F3E8FF',
-                start: criticalAngle + highAngle,
-                end: criticalAngle + highAngle + informationalAngle
+                strokeDasharray: `${informationalLength} ${informationalGap}`,
+                strokeDashoffset: informationalOffset,
+                startAngle: (criticalPercent + highPercent) * 3.6,
+                endAngle: (criticalPercent + highPercent + informationalPercent) * 3.6
             }
-        ];
-        // Mouse event handler for arc paths
-        const handleMouse = (e: React.MouseEvent, label: string, value: number, color: string) => {
-            if (svgRef.current) {
-                const rect = svgRef.current.getBoundingClientRect();
-                setHovered({
-                    label,
-                    value,
-                    color,
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                });
-            }
+        ].filter(segment => segment.value > 0); // Only show segments with values
+
+        // Helper function to create proper arc path for hover areas
+        const createArcPath = (centerX: number, centerY: number, radius: number, startAngle: number, endAngle: number, innerRadius: number) => {
+            // Convert angles to radians and adjust for SVG coordinate system
+            const startAngleRad = (startAngle - 90) * Math.PI / 180;
+            const endAngleRad = (endAngle - 90) * Math.PI / 180;
+
+            // Calculate outer arc points
+            const x1 = centerX + radius * Math.cos(startAngleRad);
+            const y1 = centerY + radius * Math.sin(startAngleRad);
+            const x2 = centerX + radius * Math.cos(endAngleRad);
+            const y2 = centerY + radius * Math.sin(endAngleRad);
+
+            // Calculate inner arc points
+            const x3 = centerX + innerRadius * Math.cos(endAngleRad);
+            const y3 = centerY + innerRadius * Math.sin(endAngleRad);
+            const x4 = centerX + innerRadius * Math.cos(startAngleRad);
+            const y4 = centerY + innerRadius * Math.sin(startAngleRad);
+
+            // Determine if we need a large arc
+            const largeArcFlag = endAngle - startAngle > 180 ? "1" : "0";
+
+            return [
+                "M", x1, y1, // Move to start of outer arc
+                "A", radius, radius, 0, largeArcFlag, 1, x2, y2, // Outer arc
+                "L", x3, y3, // Line to start of inner arc
+                "A", innerRadius, innerRadius, 0, largeArcFlag, 0, x4, y4, // Inner arc (reverse direction)
+                "Z" // Close path
+            ].join(" ");
         };
+
+        const handleMouseMove = (e: React.MouseEvent) => {
+            setMousePos({ x: e.clientX, y: e.clientY });
+        };
+
+        const handleSegmentHover = (segment: typeof segments[0]) => {
+            setHovered({
+                label: segment.label,
+                value: segment.value,
+                color: segment.color,
+                percent: segment.percent
+            });
+        };
+
         return (
             <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 mb-4">
+                <div className="relative w-40 h-40 mb-6" onMouseMove={handleMouseMove}>
                     <svg
-                        ref={svgRef}
                         viewBox="0 0 100 100"
                         className="w-full h-full transform -rotate-90"
                     >
-                        {/* Background circle */}
+                        {/* Background circle - only show if there are gaps */}
                         <circle
                             cx="50"
                             cy="50"
-                            r="40"
+                            r={radius}
                             fill="none"
                             stroke="#F3E8FF"
-                            strokeWidth="18"
+                            strokeWidth={strokeWidth}
+                            opacity="0.3"
                         />
-                        {/* Donut segments as arcs */}
-                        {segments.map(seg => (
-                            <path
-                                key={seg.label}
-                                d={describeArc(50, 50, 40, seg.start, seg.end)}
-                                fill="none"
-                                stroke={seg.color}
-                                strokeWidth="18"
-                                strokeLinecap="round"
-                                onMouseEnter={e => handleMouse(e, seg.label, seg.value, seg.color)}
-                                onMouseMove={e => handleMouse(e, seg.label, seg.value, seg.color)}
-                                onMouseLeave={() => setHovered(null)}
-                                style={{ cursor: 'pointer' }}
-                            />
+
+                        {/* Render each segment */}
+                        {segments.map((segment, index) => (
+                            <g key={`segment-${segment.label}`}>
+                                {/* Visible segment */}
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r={radius}
+                                    fill="none"
+                                    stroke={segment.color}
+                                    strokeWidth={strokeWidth}
+                                    strokeLinecap="round"
+                                    strokeDasharray={segment.strokeDasharray}
+                                    strokeDashoffset={segment.strokeDashoffset}
+                                    style={{
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                />
+
+                                {/* Hover overlay - shows on top when hovered */}
+                                {hovered?.label === segment.label && (
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r={radius}
+                                        fill="none"
+                                        stroke="rgba(59, 130, 246, 0.6)"
+                                        strokeWidth={strokeWidth}
+                                        strokeLinecap="round"
+                                        strokeDasharray={segment.strokeDasharray}
+                                        strokeDashoffset={segment.strokeDashoffset}
+                                        style={{
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    />
+                                )}
+
+                                {/* Invisible hover area */}
+                                <path
+                                    d={createArcPath(50, 50, radius + strokeWidth / 2 + 2, segment.startAngle, segment.endAngle, radius - strokeWidth / 2 - 2)}
+                                    fill="transparent"
+                                    stroke="transparent"
+                                    className="cursor-pointer"
+                                    onMouseEnter={() => handleSegmentHover(segment)}
+                                    onMouseLeave={() => setHovered(null)}
+                                />
+                            </g>
                         ))}
                     </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900">
+
+                    {/* Center text */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span className="text-3xl font-bold text-gray-900">
                             <AnimatedNumber value={total / 1000} precision={1} />
                         </span>
-                        <span className="text-2xl text-gray-900 font-bold">K</span>
+                        <span className="text-3xl text-gray-900 font-bold">K</span>
                     </div>
-                    {hovered && (
-                        <div
-                            className="pointer-events-none absolute z-10 px-3 py-2 rounded-lg shadow-lg text-xs text-white"
-                            style={{
-                                left: hovered.x + 10,
-                                top: hovered.y - 10,
-                                background: hovered.color,
-                                whiteSpace: 'nowrap',
-                                minWidth: 60
-                            }}
-                        >
-                            <div className="font-semibold">{hovered.label}</div>
-                            <div>Value: <span className="font-bold">{hovered.value}</span></div>
-                        </div>
-                    )}
                 </div>
-                <div className="flex gap-4 text-xs">
-                    <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-[#8253A2] rounded-full"></div>
-                        <span className="text-gray-600">Critical</span>
+
+                {/* Tooltip */}
+                {hovered && (
+                    <div
+                        className="fixed z-50 px-3 py-2 rounded-lg shadow-lg text-xs text-white pointer-events-none bg-gray-800 border border-gray-600"
+                        style={{
+                            left: mousePos.x + 10,
+                            top: mousePos.y - 60,
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        <div className="font-semibold">{hovered.label}</div>
+                        <div>Value: <span className="font-bold">{hovered.value.toLocaleString()}</span></div>
+                        <div>Percentage: <span className="font-bold">{hovered.percent.toFixed(1)}%</span></div>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-[#D8B4FE] rounded-full"></div>
-                        <span className="text-gray-600">High</span>
+                )}
+
+                {/* Legend */}
+                <div className="flex gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-[#8253A2] rounded-full"></div>
+                        <span className="text-gray-700">Critical</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-[#F3E8FF] rounded-full"></div>
-                        <span className="text-gray-600">Informational</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-[#D8B4FE] rounded-full"></div>
+                        <span className="text-gray-700">High</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-[#F3E8FF] rounded-full"></div>
+                        <span className="text-gray-700">Informational</span>
                     </div>
                 </div>
             </div>
@@ -357,36 +465,36 @@ const Dashboard = () => {
         );
     };
 
-interface ProgressBarProps {
-    label: string;
-    animatedValue: { percent: number; count: number };
-}
-const ProgressBar: React.FC<ProgressBarProps> = ({ label, animatedValue }) => (
-    <div className="mb-3">
-        <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-                <div className="rounded-md h-[30px] overflow-hidden relative">
-                    <div
-                        className="bg-[#E9D8FD] h-full rounded-md transition-all duration-100 ease-out"
-                        style={{ width: `${Math.min(animatedValue.percent, 100)}%` }}
-                    >
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-between px-[8px] py-[4px]">
-                        <span className="text-gray-800 font-medium text-sm">
-                            {label}
-                        </span>
-                        <span className="text-gray-800 text-sm">
-                            {animatedValue.percent}%
-                        </span>
+    interface ProgressBarProps {
+        label: string;
+        animatedValue: { percent: number; count: number };
+    }
+    const ProgressBar: React.FC<ProgressBarProps> = ({ label, animatedValue }) => (
+        <div className="mb-3">
+            <div className="flex items-center gap-3">
+                <div className="flex-1 relative">
+                    <div className="rounded-md h-[30px] overflow-hidden relative">
+                        <div
+                            className="bg-[#E9D8FD] h-full rounded-md transition-all duration-100 ease-out"
+                            style={{ width: `${Math.min(animatedValue.percent, 100)}%` }}
+                        >
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-between px-[8px] py-[4px]">
+                            <span className="text-gray-800 font-medium text-sm">
+                                {label}
+                            </span>
+                            <span className="text-gray-800 text-sm">
+                                {animatedValue.percent}%
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div className="text-[#642CFD] font-bold text-[14px] w-12 text-center">
-                {animatedValue.count}
+                <div className="text-[#642CFD] font-bold text-[14px] w-12 text-center">
+                    {animatedValue.count}
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
 
     // Animation trigger state
     // (removed stray comment)
@@ -424,7 +532,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ label, animatedValue }) => (
                     </div>
                 </header>
 
-                {/* Content */} 
+                {/* Content */}
                 <main className="flex-1 overflow-auto p-4">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
