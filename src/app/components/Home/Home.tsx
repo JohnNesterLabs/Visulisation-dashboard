@@ -178,15 +178,83 @@ const Dashboard = () => {
     };
 
     // AnimatedDonutChart is now a pure presentational component
+    // Helper to create SVG arc path for donut segment
+    function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+        const start = polarToCartesian(cx, cy, r, endAngle);
+        const end = polarToCartesian(cx, cy, r, startAngle);
+        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+        return [
+            "M", start.x, start.y,
+            "A", r, r, 0, largeArcFlag, 0, end.x, end.y
+        ].join(" ");
+    }
+    function polarToCartesian(cx: number, cy: number, r: number, angle: number) {
+        const rad = (angle - 90) * Math.PI / 180.0;
+        return {
+            x: cx + (r * Math.cos(rad)),
+            y: cy + (r * Math.sin(rad))
+        };
+    }
     const AnimatedDonutChart: React.FC<DonutChartProps> = ({ data }) => {
         const { total, critical, high, informational } = data;
+        const [hovered, setHovered] = React.useState<null | {
+            label: string;
+            value: number;
+            color: string;
+            x: number;
+            y: number;
+        }>(null);
+        const svgRef = React.useRef<SVGSVGElement>(null);
+        // Angles for each segment (in degrees)
         const criticalAngle = (critical / 100) * 360;
         const highAngle = (high / 100) * 360;
         const informationalAngle = (informational / 100) * 360;
+        // Start and end angles for each segment
+        const segments = [
+            {
+                label: 'Critical',
+                value: critical,
+                color: '#8253A2',
+                start: 0,
+                end: criticalAngle
+            },
+            {
+                label: 'High',
+                value: high,
+                color: '#D8B4FE',
+                start: criticalAngle,
+                end: criticalAngle + highAngle
+            },
+            {
+                label: 'Informational',
+                value: informational,
+                color: '#F3E8FF',
+                start: criticalAngle + highAngle,
+                end: criticalAngle + highAngle + informationalAngle
+            }
+        ];
+        // Mouse event handler for arc paths
+        const handleMouse = (e: React.MouseEvent, label: string, value: number, color: string) => {
+            if (svgRef.current) {
+                const rect = svgRef.current.getBoundingClientRect();
+                setHovered({
+                    label,
+                    value,
+                    color,
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                });
+            }
+        };
         return (
             <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 mb-4">
-                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                    <svg
+                        ref={svgRef}
+                        viewBox="0 0 100 100"
+                        className="w-full h-full transform -rotate-90"
+                    >
+                        {/* Background circle */}
                         <circle
                             cx="50"
                             cy="50"
@@ -195,26 +263,21 @@ const Dashboard = () => {
                             stroke="#F3E8FF"
                             strokeWidth="18"
                         />
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="none"
-                            stroke="#8253A2"
-                            strokeWidth="18"
-                            strokeDasharray={`${criticalAngle * 0.7} ${360 - criticalAngle * 0.7}`}
-                            strokeDashoffset="0"
-                        />
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="none"
-                            stroke="#D8B4FE"
-                            strokeWidth="18"
-                            strokeDasharray={`${highAngle * 0.7} ${360 - highAngle * 0.7}`}
-                            strokeDashoffset={`-${criticalAngle * 0.7}`}
-                        />
+                        {/* Donut segments as arcs */}
+                        {segments.map(seg => (
+                            <path
+                                key={seg.label}
+                                d={describeArc(50, 50, 40, seg.start, seg.end)}
+                                fill="none"
+                                stroke={seg.color}
+                                strokeWidth="18"
+                                strokeLinecap="round"
+                                onMouseEnter={e => handleMouse(e, seg.label, seg.value, seg.color)}
+                                onMouseMove={e => handleMouse(e, seg.label, seg.value, seg.color)}
+                                onMouseLeave={() => setHovered(null)}
+                                style={{ cursor: 'pointer' }}
+                            />
+                        ))}
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-2xl font-bold text-gray-900">
@@ -222,6 +285,21 @@ const Dashboard = () => {
                         </span>
                         <span className="text-2xl text-gray-900 font-bold">K</span>
                     </div>
+                    {hovered && (
+                        <div
+                            className="pointer-events-none absolute z-10 px-3 py-2 rounded-lg shadow-lg text-xs text-white"
+                            style={{
+                                left: hovered.x + 10,
+                                top: hovered.y - 10,
+                                background: hovered.color,
+                                whiteSpace: 'nowrap',
+                                minWidth: 60
+                            }}
+                        >
+                            <div className="font-semibold">{hovered.label}</div>
+                            <div>Value: <span className="font-bold">{hovered.value}</span></div>
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-4 text-xs">
                     <div className="flex items-center gap-1">
