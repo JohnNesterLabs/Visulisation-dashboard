@@ -1,16 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { 
-  User, 
-  Globe, 
-  Shield, 
   ChevronLeft, 
   ChevronRight, 
-  Settings,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Lock,
-  Maximize2,
   Eye,
   ChevronDown,
   ChevronUp,
@@ -19,225 +10,24 @@ import {
   FileText
 } from 'lucide-react';
 import SkillChart from '../SkillChart/SkillChart';
-
-// TypeScript types for node and connection
-interface AttackNode {
-  id: string;
-  type: string;
-  label: string;
-  x: number;
-  y: number;
-  icon: React.ElementType;
-  status: string;
-}
-
-interface AttackConnection {
-  from: string;
-  to: string;
-  action: string;
-  style: string;
-}
+import Image from 'next/image';
 
 const AttackGraph = () => {
   const [selectedTab, setSelectedTab] = useState('Attack Graph');
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [selectedNode, setSelectedNode] = useState<AttackNode | null>(null);
-  const [showDetails, setShowDetails] = useState(true);
-    const [showAttackOverview, setShowAttackOverview] = useState(false);
-    const [expandedSections, setExpandedSections] = useState({
+  const [showAttackOverview, setShowAttackOverview] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
     policyResults: true,
     websites: true,
     users: true
   });
-  const graphRef = useRef(null);
 
   const tabs = ['Attack Graph', 'Details', 'Recommended Actions', 'Related Attacks', 'Sqrx AI'];
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (graphRef.current && (e.target === graphRef.current || (e.target as HTMLElement).closest('.attack-graph-container'))) {
-      setIsPanning(true);
-      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    }
-  };
-
-  // handleMouseMove and handleMouseUp with useCallback to fix lint
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isPanning) {
-      setPanOffset({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  }, [isPanning, dragStart]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.2, 3));
-  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
-  const handleReset = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-  
-const toggleSection = (section: keyof typeof expandedSections) => {
+  const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
-  };
-
-  const nodes: AttackNode[] = [
-    {
-      id: 'user',
-      type: 'user',
-      label: 'anant@organization.com',
-      x: 150,
-      y: 300,
-      icon: User,
-      status: 'initial'
-    },
-    {
-      id: 'asana',
-      type: 'service',
-      label: 'app.asana.com',
-      x: 400,
-      y: 350,
-      icon: Globe,
-      status: 'compromised'
-    },
-    {
-      id: 'reddit',
-      type: 'service',
-      label: 'reddit.com',
-      x: 650,
-      y: 450,
-      icon: Globe,
-      status: 'accessed'
-    },
-    {
-      id: 'policy',
-      type: 'policy',
-      label: 'Policy: Site Visit',
-      x: 850,
-      y: 520,
-      icon: Shield,
-      status: 'allowed'
-    }
-  ];
-
-  const connections: AttackConnection[] = [
-    { from: 'user', to: 'asana', action: 'Typed', style: 'solid' },
-    { from: 'asana', to: 'reddit', action: 'Click', style: 'solid' },
-    { from: 'reddit', to: 'policy', action: '', style: 'dotted' }
-  ];
-
-  // NodeComponent with proper props typing
-  interface NodeComponentProps {
-    node: AttackNode;
-    isSelected: boolean;
-    onClick: (node: AttackNode) => void;
-  }
-  const NodeComponent: React.FC<NodeComponentProps> = ({ node, isSelected, onClick }) => {
-    const Icon = node.icon;
-    const getNodeColor = () => {
-      switch (node.status) {
-        case 'initial': return 'bg-blue-100 border-blue-300';
-        case 'compromised': return 'bg-red-100 border-red-300';
-        case 'accessed': return 'bg-orange-100 border-orange-300';
-        case 'allowed': return 'bg-green-100 border-green-300';
-        default: return 'bg-gray-100 border-gray-300';
-      }
-    };
-
-    const getIconColor = () => {
-      switch (node.status) {
-        case 'initial': return 'text-blue-600';
-        case 'compromised': return 'text-red-600';
-        case 'accessed': return 'text-orange-600';
-        case 'allowed': return 'text-green-600';
-        default: return 'text-gray-600';
-      }
-    };
-
-    return (
-      <div
-        className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
-          isSelected ? 'scale-110' : 'hover:scale-105'
-        }`}
-        style={{ left: node.x, top: node.y }}
-        onClick={() => onClick(node)}
-      >
-        <div className={`w-16 h-16 rounded-full border-2 ${getNodeColor()} flex items-center justify-center shadow-lg ${
-          isSelected ? 'ring-4 ring-blue-300' : ''
-        }`}>
-          <Icon className={`w-8 h-8 ${getIconColor()}`} />
-        </div>
-        <div className="mt-2 bg-white px-3 py-1 rounded-full shadow-md border text-sm font-medium text-gray-700 whitespace-nowrap">
-          {node.label}
-        </div>
-      </div>
-    );
-  };
-
-  // ConnectionLine with proper props typing
-  interface ConnectionLineProps {
-    connection: AttackConnection;
-  }
-  const ConnectionLine: React.FC<ConnectionLineProps> = ({ connection }) => {
-    const fromNode = nodes.find(n => n.id === connection.from);
-    const toNode = nodes.find(n => n.id === connection.to);
-    
-    if (!fromNode || !toNode) return null;
-
-    const dx = toNode.x - fromNode.x;
-    const dy = toNode.y - fromNode.y;
-    const angle = Math.atan2(dy, dx);
-    // const length = Math.sqrt(dx * dx + dy * dy) - 64; // Removed unused variable
-
-    const startX = fromNode.x + Math.cos(angle) * 32;
-    const startY = fromNode.y + Math.sin(angle) * 32;
-    const endX = toNode.x - Math.cos(angle) * 32;
-    const endY = toNode.y - Math.sin(angle) * 32;
-
-    return (
-      <g>
-        <line
-          x1={startX}
-          y1={startY}
-          x2={endX}
-          y2={endY}
-          stroke="#8B5CF6"
-          strokeWidth="3"
-          strokeDasharray={connection.style === 'dotted' ? '8 4' : 'none'}
-          markerEnd="url(#arrowhead)"
-        />
-        {connection.action && (
-          <text
-            x={(startX + endX) / 2}
-            y={(startY + endY) / 2 - 10}
-            textAnchor="middle"
-            className="fill-purple-600 text-sm font-medium"
-            style={{ fontSize: '12px' }}
-          >
-            {connection.action}
-          </text>
-        )}
-      </g>
-    );
   };
 
   return (
@@ -311,7 +101,7 @@ const toggleSection = (section: keyof typeof expandedSections) => {
             <button 
              onClick={() => setShowAttackOverview(!showAttackOverview)}
             className="p-3 hover:bg-gray-100 rounded-[16px] border border-[#DDE1E6] cursor-pointer">
-                <img src="/setting.png" alt="setting" className='w-6 h-6' />
+                <Image src="/setting.png" alt="setting" width={24} height={24} className='w-6 h-6' />
             </button>
           </div>
         </div>
@@ -321,51 +111,6 @@ const toggleSection = (section: keyof typeof expandedSections) => {
       <div className="flex h-[500px]">
         {/* Graph Area */}
            <SkillChart/>
-
-        {/* Details Panel */}
-        {showDetails && selectedNode && (
-          <div className="w-80 bg-white border-l border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Node Details</h3>
-              <button 
-                onClick={() => setShowDetails(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <Eye className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Type</label>
-                <p className="text-sm text-gray-900 capitalize">{selectedNode.type}</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-700">Label</label>
-                <p className="text-sm text-gray-900">{selectedNode.label}</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-700">Status</label>
-                <p className="text-sm text-gray-900 capitalize">{selectedNode.status}</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-700">Position</label>
-                <p className="text-sm text-gray-900">X: {selectedNode.x}, Y: {selectedNode.y}</p>
-              </div>
-              
-              {selectedNode.status === 'allowed' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-800">
-                    This action was allowed by the security policy at 9th July 2025 03:58:31 PM
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
         {/* Attack Overview Popup */}
@@ -516,7 +261,6 @@ const toggleSection = (section: keyof typeof expandedSections) => {
           </div>
         </div>
       )}
-
 
       {/* View Less Button */}
       <div className="bg-white border-t border-gray-200 px-6 py-3">

@@ -4,27 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Sidebar from '../Sidebar';
 import {
-    Search,
-    Shield,
-    BarChart3,
-    AlertTriangle,
-    FileText,
-    Database,
-    Settings,
-    Users,
-    Wrench,
-    GitBranch,
-    ChevronDown,
     RefreshCw,
     TrendingUp,
-    TrendingDown,
-    ExternalLink,
-    Download,
-    LogOut
+    TrendingDown
 } from 'lucide-react';
-import { categoryData, chartAreaHeight, chartConfig, chartHeight, mostVisitedDomains, riskyCategories, riskyWebsites } from '@/app/utils';
-
-
+import { categoryData, chartAreaHeight, chartConfig, mostVisitedDomains, riskyWebsites, chartHeight } from '@/app/utils';
 
 const Dashboard = () => {
     // Animation trigger state for chart/progress refresh
@@ -32,18 +16,18 @@ const Dashboard = () => {
     const [activeSection, setActiveSection] = useState('Analytics');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     // Final data for charts and progress bars
-    const finalSeverityData = {
+    const finalSeverityData = React.useMemo(() => ({
         total: 9200,
         critical: 75,
         high: 20,
         informational: 5
-    };
-    const finalValues = {
+    }), []);
+    const finalValues = React.useMemo(() => ({
         freeHosted1: { percent: 40, count: 18 },
         typosquatting: { percent: 8, count: 5 },
         newDomain: { percent: 60, count: 30 },
         freeHosted2: { percent: 20, count: 9 }
-    };
+    }), []);
     // Animated values for progress bars, donut, bar chart, and numbers
     const [animated, setAnimated] = useState({
         progress: {
@@ -102,17 +86,6 @@ const Dashboard = () => {
                 usersAtRisk: 0
             }
         };
-        const endAnimated = {
-            progress: finalValues,
-            donut: finalSeverityData,
-            bar: categoryData,
-            numbers: {
-                detections: 4600,
-                uniqueDomains: 15,
-                maliciousSites: 25,
-                usersAtRisk: 1000
-            }
-        };
         setAnimated(startAnimated);
         const interval = setInterval(() => {
             currentStep++;
@@ -143,7 +116,7 @@ const Dashboard = () => {
                     high: Math.round(finalSeverityData.high * easeOut),
                     informational: Math.round(finalSeverityData.informational * easeOut)
                 },
-                bar: categoryData.map((d, i) => ({ ...d, value: Math.round(d.value * easeOut) })),
+                bar: categoryData.map(d => ({ ...d, value: Math.round(d.value * easeOut) })),
                 numbers: {
                     detections: Math.round(4600 * easeOut),
                     uniqueDomains: Math.round(15 * easeOut),
@@ -154,7 +127,7 @@ const Dashboard = () => {
             if (progress >= 1) clearInterval(interval);
         }, stepDelay);
         return () => clearInterval(interval);
-    }, [animateKey]);
+    }, [animateKey, finalSeverityData, finalValues]);
     // AnimatedNumber now just formats the value passed from parent
     const AnimatedNumber: React.FC<{ value: number; precision?: number }> = ({ value, precision = 0 }) => {
         const formatWithCurrency = (num: number) => {
@@ -179,10 +152,9 @@ const Dashboard = () => {
 
     // AnimatedDonutChart is now a pure presentational component
     const AnimatedDonutChart: React.FC<DonutChartProps> = ({ data }) => {
-        const { total, critical, high, informational } = data;
+        const { total, critical, high } = data;
         const criticalAngle = (critical / 100) * 360;
         const highAngle = (high / 100) * 360;
-        const informationalAngle = (informational / 100) * 360;
         return (
             <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 mb-4">
@@ -309,9 +281,6 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ label, animatedValue }) => (
         </div>
     </div>
 );
-
-    // Animation trigger state
-    // (removed stray comment)
 
     return (
         <div className="flex h-screen bg-gray-50">

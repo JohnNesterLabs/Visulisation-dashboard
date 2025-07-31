@@ -22,6 +22,12 @@ nodeHtmlLabel(cytoscape);
 cytoscape.use(dagre);
 window.$ = $;
 
+declare global {
+  interface Window {
+    $: typeof $;
+  }
+}
+
 const iconMap = {
   crown: <FaCrown size={24} color="#a259ff" />,
   bullseye: <FaBullseye size={24} color="#a259ff" />,
@@ -205,7 +211,6 @@ const SkillChart: React.FC = () => {
           },
         },
       ],
-      // @ts-expect-error: dagre layout options are not typed in cytoscape
       layout: {
         name: "dagre",
         rankDir: "LR",
@@ -213,7 +218,7 @@ const SkillChart: React.FC = () => {
         edgeSep: 20,
         rankSep: 100,
         fit: false,
-      },
+      } as any, // Cast to any to allow dagre-specific options
       zoom: 1,
       pan: { x: 0, y: 0 },
     });
@@ -264,10 +269,8 @@ const SkillChart: React.FC = () => {
     cy.edges().on("mouseover", (event) => event.target.addClass("hovered"));
     cy.edges().on("mouseout", (event) => event.target.removeClass("hovered"));
 
-    // @ts-expect-error: qtip is a plugin and not typed
     cy.nodes().forEach((node) => {
-      // @ts-expect-error: qtip is a plugin and not typed
-      node.qtip({
+      (node as any).qtip({
         content: node.data("tooltip"),
         position: { my: "top center", at: "bottom center" },
         style: { classes: "qtip-light qtip-rounded qtip-shadow" },
@@ -278,8 +281,7 @@ const SkillChart: React.FC = () => {
     cy.edges().forEach((edge) => {
       const label = edge.data("label");
       if (label) {
-        // @ts-expect-error: qtip is a plugin and not typed
-        edge.qtip({
+        (edge as any).qtip({
           content: label,
           position: { my: "top center", at: "bottom center" },
           style: { classes: "qtip-light qtip-rounded qtip-shadow" },
